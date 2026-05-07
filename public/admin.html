@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veltrix CMS — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:16px;}
+body{font-family:'Figtree',sans-serif;background:#03050E;color:#EEF0FF;min-height:100vh;line-height:1;}
+:root{--ac:#00D2FF;--ac2:#FFB400;--bg2:#07091A;--sf:rgba(255,255,255,.04);--bd:rgba(0,210,255,.14);--mu:#606880;--mu2:#8890AA;--hf:'Syne',sans-serif;}
+
+/* ── Login Screen ─────────────────── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,rgba(0,210,255,.06),transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(123,47,255,.05),transparent 60%);}
+.login-box{background:#090C1E;border:1px solid var(--bd);border-radius:22px;padding:48px 44px;width:420px;max-width:94vw;}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px;}
+.l-badge{font-family:var(--hf);font-size:.7rem;letter-spacing:.18em;color:var(--ac);background:rgba(0,210,255,.08);border:1px solid rgba(0,210,255,.2);padding:5px 14px;border-radius:100px;margin-bottom:0;}
+.login-title{font-family:var(--hf);font-weight:800;font-size:1.8rem;margin-bottom:8px;}
+.login-sub{font-size:.9rem;color:var(--mu2);margin-bottom:28px;line-height:1.5;}
+.l-inp{width:100%;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 18px;color:#EEF0FF;font-family:'Figtree',sans-serif;font-size:1rem;outline:none;transition:border-color .2s;margin-bottom:14px;}
+.l-inp:focus{border-color:var(--ac);}
+.l-err{color:#FF4060;font-size:.83rem;display:none;background:rgba(255,64,96,.08);padding:10px 14px;border-radius:7px;border:1px solid rgba(255,64,96,.2);margin-bottom:14px;}
+.l-err.show{display:block;}
+.l-btn{width:100%;padding:14px;background:var(--ac);color:#03050E;font-family:var(--hf);font-weight:700;font-size:.9rem;border:none;border-radius:9px;cursor:pointer;transition:all .2s;}
+.l-btn:hover{background:#33DAFF;}
+.l-btn:disabled{opacity:.7;cursor:not-allowed;}
+
+/* ── Admin Shell ──────────────────── */
+#admin-shell{display:none;height:100vh;display:none;flex-direction:row;}
+#admin-shell.show{display:flex;}
+
+/* Sidebar */
+.sidebar{width:220px;flex-shrink:0;background:#070919;border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;}
+.sb-logo{padding:20px 20px 0;display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.sb-logo-mark{font-family:var(--hf);font-weight:800;font-size:.95rem;letter-spacing:.08em;background:linear-gradient(90deg,#fff,var(--ac));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sb-badge{font-size:.6rem;color:var(--mu2);letter-spacing:.1em;padding:0 20px;margin-bottom:20px;}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 10px;}
+.sb-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;font-family:var(--hf);font-weight:600;font-size:.8rem;color:var(--mu2);background:none;border:none;border-radius:9px;cursor:pointer;transition:all .2s;letter-spacing:.04em;text-align:left;}
+.sb-btn:hover{background:rgba(255,255,255,.05);color:#EEF0FF;}
+.sb-btn.on{background:rgba(0,210,255,.08);color:var(--ac);border:1px solid rgba(0,210,255,.15);}
+.sb-icon{font-size:1rem;width:20px;text-align:center;}
+.sb-sep{height:1px;background:rgba(255,255,255,.06);margin:8px 10px;}
+.sb-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-user{font-size:.76rem;color:var(--mu);margin-bottom:10px;}
+.sb-logout{width:100%;padding:8px;background:rgba(255,64,96,.08);color:#FF7090;font-family:var(--hf);font-weight:600;font-size:.76rem;border:1px solid rgba(255,64,96,.2);border-radius:7px;cursor:pointer;transition:all .2s;}
+.sb-logout:hover{background:rgba(255,64,96,.15);}
+
+/* Main content area */
+.cms-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.cms-head{padding:18px 28px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:rgba(7,9,26,.5);}
+.cms-title{font-family:var(--hf);font-weight:700;font-size:1.05rem;}
+.cms-subtitle{font-size:.76rem;color:var(--mu);margin-top:3px;}
+.cms-body{flex:1;overflow-y:auto;padding:24px 28px;scrollbar-width:thin;scrollbar-color:rgba(0,210,255,.2) transparent;}
+.cms-body::-webkit-scrollbar{width:4px;}
+.cms-body::-webkit-scrollbar-thumb{background:rgba(0,210,255,.2);border-radius:2px;}
+
+/* Tab panels */
+.tab-panel{display:none;}
+.tab-panel.on{display:block;}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:13px 20px;background:#0D1228;border:1px solid rgba(0,255,136,.3);border-radius:12px;font-size:.86rem;color:#00FF88;transform:translateY(20px);opacity:0;transition:all .3s cubic-bezier(.16,1,.3,1);pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* Form atoms */
+.a-sec{font-family:var(--hf);font-weight:700;font-size:.82rem;color:var(--mu2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+.af{margin-bottom:15px;}
+.al{display:block;font-size:.7rem;color:var(--mu);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px;}
+.ai{width:100%;background:var(--sf);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:11px 15px;color:#EEF0FF;font-family:'Figtree',sans-serif;font-size:.93rem;outline:none;transition:border-color .2s;}
+.ai:focus{border-color:var(--ac);}
+.at{width:100%;background:var(--sf);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:11px 15px;color:#EEF0FF;font-family:'Figtree',sans-serif;font-size:.93rem;outline:none;transition:border-color .2s;height:88px;resize:vertical;line-height:1.6;}
+.at:focus{border-color:var(--ac);}
+.at-lg{height:150px;}
+.adiv{border:none;border-top:1px solid rgba(255,255,255,.07);margin:20px 0;}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.r3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.ai-item{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px;margin-bottom:14px;}
+.ai-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ai-lbl{font-family:var(--hf);font-weight:600;font-size:.86rem;color:var(--mu2);}
+.btn-sv{padding:9px 20px;background:var(--ac);color:#03050E;font-family:var(--hf);font-weight:700;font-size:.78rem;border:none;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn-sv:hover{background:#33DAFF;}
+.btn-sv:disabled{opacity:.6;cursor:not-allowed;}
+.btn-del{padding:7px 14px;background:rgba(255,64,96,.1);color:#FF4060;font-family:var(--hf);font-weight:600;font-size:.76rem;border:1px solid rgba(255,64,96,.25);border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn-del:hover{background:rgba(255,64,96,.2);}
+.btn-add{width:100%;padding:12px;background:transparent;color:var(--ac);font-family:var(--hf);font-weight:700;font-size:.82rem;border:1px dashed rgba(0,210,255,.3);border-radius:9px;cursor:pointer;transition:all .2s;}
+.btn-add:hover{background:rgba(0,210,255,.06);border-color:var(--ac);}
+.btn-main{padding:12px 26px;background:var(--ac);color:#03050E;font-family:var(--hf);font-weight:700;font-size:.85rem;border:none;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-main:hover{background:#33DAFF;}
+.ok{display:inline-flex;align-items:center;gap:5px;color:#00FF88;font-size:.8rem;margin-left:10px;opacity:0;transition:opacity .3s;}
+.ok.show{opacity:1;}
+/* Logo upload UI */
+.logo-box{background:rgba(0,210,255,.04);border:1px solid rgba(0,210,255,.14);border-radius:12px;padding:16px;margin-bottom:14px;}
+.logo-box-head{font-family:var(--hf);font-weight:600;font-size:.8rem;color:var(--mu2);margin-bottom:12px;}
+.logo-prev{width:72px;height:72px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:10px;}
+.logo-prev img{max-width:100%;max-height:100%;object-fit:contain;}
+.logo-init{font-family:var(--hf);font-weight:800;font-size:1.4rem;color:var(--ac);}
+.logo-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.btn-up{padding:8px 16px;background:rgba(0,210,255,.1);color:var(--ac);font-family:var(--hf);font-weight:700;font-size:.76rem;border:1px solid rgba(0,210,255,.3);border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn-up:hover{background:rgba(0,210,255,.18);}
+.btn-rm{padding:8px 16px;background:rgba(255,64,96,.08);color:#FF7090;font-family:var(--hf);font-weight:600;font-size:.76rem;border:1px solid rgba(255,64,96,.2);border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn-rm:hover{background:rgba(255,64,96,.15);}
+.logo-hint{font-size:.7rem;color:var(--mu);margin-top:6px;line-height:1.4;}
+input[type="file"]{display:none;}
+.main-logo-prev{width:200px;height:70px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:14px;}
+.main-logo-prev img{max-width:100%;max-height:100%;object-fit:contain;}
+/* Info box */
+.info-box{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px;}
+.info-box code{background:rgba(0,210,255,.1);padding:2px 8px;border-radius:4px;color:var(--ac);font-size:.85rem;}
+.warn-box{background:rgba(255,64,96,.06);border:1px solid rgba(255,64,96,.2);border-radius:12px;padding:20px;}
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .r2,.r3{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="32" height="29" viewBox="0 0 120 108" fill="none">
+        <defs>
+          <linearGradient id="rga" x1="18" y1="10" x2="58" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#E8282E"/><stop offset="1" stop-color="#8B1020"/></linearGradient>
+          <linearGradient id="bga" x1="92" y1="8" x2="60" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#62C6F2"/><stop offset="1" stop-color="#1756C0"/></linearGradient>
+        </defs>
+        <path d="M 14,12 C 12,6 28,4 38,10 C 44,14 48,18 50,22 L 60,98 C 54,80 38,52 14,12 Z" fill="url(#rga)"/>
+        <path d="M 50,20 C 58,10 76,5 90,11 C 104,17 110,32 100,44 C 90,58 76,78 60,98 L 62,98 C 64,84 72,66 80,48 C 88,30 86,16 50,20 Z" fill="url(#bga)"/>
+      </svg>
+      <span class="l-badge">VELTRIX CMS</span>
+    </div>
+    <div class="login-title">Admin Access</div>
+    <div class="login-sub">Enter your admin password to manage the Veltrix International website.</div>
+    <input class="l-inp" type="password" id="pass-in" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="l-err" id="l-err">Incorrect password. Please try again.</div>
+    <button class="l-btn" id="l-btn" onclick="doLogin()">Access Panel →</button>
+  </div>
+</div>
+
+<!-- ADMIN SHELL -->
+<div id="admin-shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <svg width="24" height="22" viewBox="0 0 120 108" fill="none"><defs><linearGradient id="rgb" x1="18" y1="10" x2="58" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#E8282E"/><stop offset="1" stop-color="#8B1020"/></linearGradient><linearGradient id="bgb" x1="92" y1="8" x2="60" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#62C6F2"/><stop offset="1" stop-color="#1756C0"/></linearGradient></defs><path d="M 14,12 C 12,6 28,4 38,10 C 44,14 48,18 50,22 L 60,98 C 54,80 38,52 14,12 Z" fill="url(#rgb)"/><path d="M 50,20 C 58,10 76,5 90,11 C 104,17 110,32 100,44 C 90,58 76,78 60,98 L 62,98 C 64,84 72,66 80,48 C 88,30 86,16 50,20 Z" fill="url(#bgb)"/></svg>
+      <span class="sb-logo-mark">VELTRIX</span>
+    </div>
+    <div class="sb-badge">CMS — Phase 2</div>
+    <nav class="sb-nav">
+      <button class="sb-btn on" data-tab="hero"     onclick="setTab('hero',this)"><span class="sb-icon">🏠</span>Hero</button>
+      <button class="sb-btn"    data-tab="services"  onclick="setTab('services',this)"><span class="sb-icon">🔧</span>Services</button>
+      <button class="sb-btn"    data-tab="about"     onclick="setTab('about',this)"><span class="sb-icon">👥</span>About</button>
+      <button class="sb-btn"    data-tab="ventures"  onclick="setTab('ventures',this)"><span class="sb-icon">🚀</span>Ventures</button>
+      <button class="sb-btn"    data-tab="contact"   onclick="setTab('contact',this)"><span class="sb-icon">📬</span>Contact</button>
+      <div class="sb-sep"></div>
+      <button class="sb-btn"    data-tab="branding"  onclick="setTab('branding',this)"><span class="sb-icon">🎨</span>Branding</button>
+      <button class="sb-btn"    data-tab="settings"  onclick="setTab('settings',this)"><span class="sb-icon">⚙️</span>Settings</button>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user">Logged in as Admin</div>
+      <button class="sb-logout" onclick="doLogout()">Log Out</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="cms-main">
+    <div class="cms-head">
+      <div>
+        <div class="cms-title" id="cms-title">Hero Section</div>
+        <div class="cms-subtitle">Veltrix International — Content Management</div>
+      </div>
+      <a href="/" target="_blank" style="font-size:.82rem;color:var(--mu2);text-decoration:none;transition:color .2s;" onmouseover="this.style.color='#00D2FF'" onmouseout="this.style.color=''">↗ View Site</a>
+    </div>
+    <div class="cms-body">
+
+      <!-- HERO TAB -->
+      <div class="tab-panel on" id="tab-hero">
+        <div class="a-sec">Hero Content</div>
+        <div class="af"><label class="al">Company Name (Line 1)</label><input class="ai" id="h-l1"></div>
+        <div class="af"><label class="al">Tagline (use \n for line break)</label><input class="ai" id="h-l2"></div>
+        <div class="af"><label class="al">Description</label><textarea class="at" id="h-desc"></textarea></div>
+        <div class="af"><label class="al">Badge Text</label><input class="ai" id="h-badge"></div>
+        <hr class="adiv">
+        <div class="a-sec">Statistics</div>
+        <div class="r3">
+          <div class="af"><label class="al">Stat 1 Value</label><input class="ai" id="hs1v"></div>
+          <div class="af"><label class="al">Stat 1 Label</label><input class="ai" id="hs1l"></div>
+          <div></div>
+          <div class="af"><label class="al">Stat 2 Value</label><input class="ai" id="hs2v"></div>
+          <div class="af"><label class="al">Stat 2 Label</label><input class="ai" id="hs2l"></div>
+          <div></div>
+          <div class="af"><label class="al">Stat 3 Value</label><input class="ai" id="hs3v"></div>
+          <div class="af"><label class="al">Stat 3 Label</label><input class="ai" id="hs3l"></div>
+        </div>
+        <hr class="adiv">
+        <button class="btn-main" onclick="saveHero()">Save Hero</button><span class="ok" id="ok-hero">✓ Saved</span>
+      </div>
+
+      <!-- SERVICES TAB -->
+      <div class="tab-panel" id="tab-services">
+        <div class="a-sec">Service Cards</div>
+        <div id="svcs-list"></div>
+        <button class="btn-add" onclick="addSvc()">+ Add Service Card</button>
+      </div>
+
+      <!-- ABOUT TAB -->
+      <div class="tab-panel" id="tab-about">
+        <div class="a-sec">Company Story</div>
+        <div class="af"><label class="al">Story Text (use \n\n for paragraph breaks)</label><textarea class="at at-lg" id="a-story"></textarea></div>
+        <hr class="adiv">
+        <div class="a-sec">Founders</div>
+        <div id="founders-list"></div>
+        <button class="btn-add" onclick="addFounder()" style="margin-bottom:18px;">+ Add Founder</button>
+        <hr class="adiv">
+        <div class="a-sec">Stats / Highlights</div>
+        <div id="astats-list"></div>
+        <button class="btn-add" onclick="addAStat()" style="margin-bottom:18px;">+ Add Stat</button>
+        <hr class="adiv">
+        <button class="btn-main" onclick="saveAbout()">Save About</button><span class="ok" id="ok-about">✓ Saved</span>
+      </div>
+
+      <!-- VENTURES TAB -->
+      <div class="tab-panel" id="tab-ventures">
+        <div class="a-sec">Ventures / Products</div>
+        <div id="prods-list"></div>
+        <button class="btn-add" onclick="addProd()">+ Add New Venture</button>
+      </div>
+
+      <!-- CONTACT TAB -->
+      <div class="tab-panel" id="tab-contact">
+        <div class="a-sec">Contact Section</div>
+        <div class="af"><label class="al">Description</label><textarea class="at" id="c-desc"></textarea></div>
+        <hr class="adiv">
+        <div class="a-sec">Contact Info Items</div>
+        <div id="citems-list"></div>
+        <button class="btn-add" onclick="addCItem()" style="margin-bottom:18px;">+ Add Item</button>
+        <hr class="adiv">
+        <button class="btn-main" onclick="saveContact()">Save Contact</button><span class="ok" id="ok-contact">✓ Saved</span>
+      </div>
+
+      <!-- BRANDING TAB -->
+      <div class="tab-panel" id="tab-branding">
+        <div class="a-sec">Main Veltrix Logo</div>
+        <div class="info-box" style="margin-bottom:20px;">
+          <p style="font-size:.85rem;color:var(--mu2);line-height:1.65;margin-bottom:10px;">Upload your Veltrix International logo. It will replace the SVG V mark in the nav and footer. <strong>Recommended: SVG or transparent-background PNG.</strong> Supports PNG, JPG, SVG, WebP.</p>
+          <div class="main-logo-prev" id="ml-prev">
+            <svg width="90" height="32" viewBox="0 0 120 108" fill="none"><defs><linearGradient id="rgc" x1="18" y1="10" x2="58" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#E8282E"/><stop offset="1" stop-color="#8B1020"/></linearGradient><linearGradient id="bgc" x1="92" y1="8" x2="60" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#62C6F2"/><stop offset="1" stop-color="#1756C0"/></linearGradient></defs><path d="M 14,12 C 12,6 28,4 38,10 C 44,14 48,18 50,22 L 60,98 C 54,80 38,52 14,12 Z" fill="url(#rgc)"/><path d="M 50,20 C 58,10 76,5 90,11 C 104,17 110,32 100,44 C 90,58 76,78 60,98 L 62,98 C 64,84 72,66 80,48 C 88,30 86,16 50,20 Z" fill="url(#bgc)"/></svg>
+          </div>
+          <div class="logo-acts">
+            <label class="btn-up" for="ml-inp">↑ Upload Logo</label>
+            <input type="file" id="ml-inp" accept="image/*,.svg" onchange="uploadMainLogo(this)">
+            <button class="btn-rm" id="ml-rm" onclick="removeMainLogo()" style="display:none;">✕ Remove</button>
+          </div>
+        </div>
+        <hr class="adiv">
+        <div class="a-sec">Service Card Icons</div>
+        <div id="svc-logos-list"></div>
+      </div>
+
+      <!-- SETTINGS TAB -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="info-box" style="margin-bottom:20px;">
+          <div style="font-family:var(--hf);font-weight:700;font-size:.9rem;margin-bottom:10px;">⚡ Phase 2 — Production CMS</div>
+          <p style="font-size:.85rem;color:var(--mu2);line-height:1.7;">
+            All content is stored server-side in <code>data/content.json</code>.<br>
+            Uploaded images are stored in <code>public/uploads/</code>.<br>
+            Admin sessions expire after <code>24 hours</code>.<br>
+            To change the admin password: generate a new bcrypt hash with <code>npm run hash YourNewPassword</code> and update <code>ADMIN_PASSWORD_HASH</code> in your <code>.env</code> file.
+          </p>
+        </div>
+        <div class="warn-box">
+          <div style="font-family:var(--hf);font-weight:700;font-size:.9rem;margin-bottom:8px;color:#FF6080;">⚠ Danger Zone</div>
+          <p style="font-size:.85rem;color:var(--mu2);margin-bottom:16px;line-height:1.6;">This will reset <strong>all text content</strong> to the original defaults. Uploaded images are NOT deleted. This cannot be undone.</p>
+          <button class="btn-del" onclick="resetContent()" style="padding:10px 18px;">Reset All Text Content to Defaults</button>
+        </div>
+      </div>
+
+    </div><!-- /cms-body -->
+  </div><!-- /cms-main -->
+</div><!-- /admin-shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────
+let TOKEN = '';
+let DATA  = {};
+
+// ── Auth ──────────────────────────────────────────
+async function doLogin(){
+  const btn=document.getElementById('l-btn');
+  const pw=document.getElementById('pass-in').value;
+  const err=document.getElementById('l-err');
+  if(!pw)return;
+  btn.disabled=true; btn.textContent='Checking...';
+  err.classList.remove('show');
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    const d=await r.json();
+    if(r.ok){
+      TOKEN=d.token;
+      sessionStorage.setItem('vltx_tok',TOKEN);
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('admin-shell').classList.add('show');
+      await loadAll();
+    } else {
+      err.textContent=d.error||'Invalid password';
+      err.classList.add('show');
+    }
+  }catch{
+    err.textContent='Network error. Is the server running?';
+    err.classList.add('show');
+  }finally{
+    btn.disabled=false; btn.textContent='Access Panel →';
+    document.getElementById('pass-in').value='';
+  }
+}
+
+function doLogout(){
+  TOKEN=''; sessionStorage.removeItem('vltx_tok');
+  document.getElementById('admin-shell').classList.remove('show');
+  document.getElementById('login-screen').style.display='flex';
+}
+
+document.getElementById('pass-in').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// ── API helpers ───────────────────────────────────
+async function api(method,path,body){
+  const opts={method,headers:{'Authorization':'Bearer '+TOKEN}};
+  if(body&&!(body instanceof FormData)){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+  else if(body instanceof FormData){opts.body=body;}
+  const r=await fetch(path,opts);
+  if(r.status===401){doLogout();throw new Error('Session expired');}
+  return r;
+}
+
+// ── Load all content ──────────────────────────────
+async function loadAll(){
+  const r=await fetch('/api/content');
+  DATA=await r.json();
+  fillHero();
+  renderSvcList();
+  fillAbout();
+  renderProdList();
+  fillContact();
+  renderBranding();
+}
+
+// ── Sidebar tabs ──────────────────────────────────
+const TAB_LABELS={'hero':'Hero Section','services':'Services','about':'About Us','ventures':'Ventures','contact':'Contact','branding':'Branding','settings':'Settings'};
+function setTab(name,btn){
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  document.getElementById('tab-'+name).classList.add('on');
+  document.getElementById('cms-title').textContent=TAB_LABELS[name]||name;
+}
+
+// ── Toast / helpers ───────────────────────────────
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function showOK(id){const el=document.getElementById(id);if(!el)return;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function gv(id){const el=document.getElementById(id);return el?el.value:'';}
+function sv(id,v){const el=document.getElementById(id);if(el)el.value=v||'';}
+
+// ── HERO ──────────────────────────────────────────
+function fillHero(){
+  const h=DATA.hero||{};
+  sv('h-l1',h.l1);sv('h-l2',h.l2);sv('h-desc',h.desc);sv('h-badge',h.badge);
+  const s=h.stats||[];
+  sv('hs1v',s[0]?.v);sv('hs1l',s[0]?.l);sv('hs2v',s[1]?.v);sv('hs2l',s[1]?.l);sv('hs3v',s[2]?.v);sv('hs3l',s[2]?.l);
+}
+async function saveHero(){
+  const body={l1:gv('h-l1'),l2:gv('h-l2'),desc:gv('h-desc'),badge:gv('h-badge'),stats:[{v:gv('hs1v'),l:gv('hs1l')},{v:gv('hs2v'),l:gv('hs2l')},{v:gv('hs3v'),l:gv('hs3l')}]};
+  const r=await api('PUT','/api/content/hero',body);
+  if(r.ok){DATA.hero={...DATA.hero,...body};showOK('ok-hero');toast('Hero section saved ✓');}
+  else toast('Error saving hero');
+}
+
+// ── SERVICES ──────────────────────────────────────
+function renderSvcList(){
+  document.getElementById('svcs-list').innerHTML=(DATA.services||[]).map(s=>`
+    <div class="ai-item">
+      <div class="ai-head"><span class="ai-lbl">${esc(s.icon)} ${esc(s.title)}</span><button class="btn-del" onclick="delSvc(${s.id})">Delete</button></div>
+      <div class="r2">
+        <div class="af"><label class="al">Icon (emoji)</label><input class="ai" id="si-${s.id}" value="${esc(s.icon)}"></div>
+        <div class="af"><label class="al">Title</label><input class="ai" id="st-${s.id}" value="${esc(s.title)}"></div>
+      </div>
+      <div class="af"><label class="al">Description</label><textarea class="at" id="sd-${s.id}">${esc(s.desc)}</textarea></div>
+      <button class="btn-sv" onclick="saveSvc(${s.id})">Save</button><span class="ok" id="ok-svc-${s.id}">✓</span>
+    </div>`).join('');
+}
+async function saveSvc(id){
+  const body={icon:gv(`si-${id}`),title:gv(`st-${id}`),desc:gv(`sd-${id}`)};
+  const r=await api('PUT',`/api/content/services/${id}`,body);
+  if(r.ok){const s=DATA.services.find(x=>x.id===id);if(s)Object.assign(s,body);showOK(`ok-svc-${id}`);}
+  else toast('Error saving service');
+}
+async function delSvc(id){
+  if(!confirm('Delete this service card?'))return;
+  const r=await api('DELETE',`/api/content/services/${id}`);
+  if(r.ok){DATA.services=DATA.services.filter(s=>s.id!==id);renderSvcList();renderBranding();}
+}
+async function addSvc(){
+  const r=await api('POST','/api/content/services',{});
+  if(r.ok){const d=await r.json();DATA.services.push(d.service);renderSvcList();renderBranding();toast('Service card added');}
+}
+
+// ── ABOUT ─────────────────────────────────────────
+function fillAbout(){
+  const a=DATA.about||{};
+  sv('a-story',a.story);
+  renderFounderList();
+  renderAStatList();
+}
+function renderFounderList(){
+  document.getElementById('founders-list').innerHTML=(DATA.about?.founders||[]).map((f,i)=>`
+    <div class="ai-item">
+      <div class="ai-head"><span class="ai-lbl">${esc(f.name)}</span><button class="btn-del" onclick="delFounder(${i})">Remove</button></div>
+      <div class="r2">
+        <div class="af"><label class="al">Name</label><input class="ai" id="fn-${i}" value="${esc(f.name)}"></div>
+        <div class="af"><label class="al">Role</label><input class="ai" id="fr-${i}" value="${esc(f.role)}"></div>
+      </div>
+      <button class="btn-sv" onclick="saveFounder(${i})">Save</button><span class="ok" id="ok-f-${i}">✓</span>
+    </div>`).join('');
+}
+async function saveAbout(){
+  const body={story:gv('a-story'),founders:DATA.about?.founders||[],stats:DATA.about?.stats||[]};
+  const r=await api('PUT','/api/content/about',body);
+  if(r.ok){DATA.about={...DATA.about,...body};showOK('ok-about');toast('About section saved ✓');}
+}
+async function saveFounder(i){
+  const founders=[...(DATA.about?.founders||[])];
+  founders[i]={name:gv(`fn-${i}`),role:gv(`fr-${i}`)};
+  const r=await api('PUT','/api/content/about',{founders});
+  if(r.ok){DATA.about.founders=founders;showOK(`ok-f-${i}`);}
+}
+async function delFounder(i){
+  if(!confirm('Remove this founder?'))return;
+  const founders=[...(DATA.about?.founders||[])];founders.splice(i,1);
+  const r=await api('PUT','/api/content/about',{founders});
+  if(r.ok){DATA.about.founders=founders;renderFounderList();}
+}
+async function addFounder(){
+  const founders=[...(DATA.about?.founders||[]),{name:'New Founder',role:'Co-Founder'}];
+  const r=await api('PUT','/api/content/about',{founders});
+  if(r.ok){DATA.about.founders=founders;renderFounderList();}
+}
+function renderAStatList(){
+  document.getElementById('astats-list').innerHTML=(DATA.about?.stats||[]).map((s,i)=>`
+    <div class="ai-item">
+      <div class="ai-head"><span class="ai-lbl">${esc(s.v)} — ${esc(s.l)}</span><button class="btn-del" onclick="delAStat(${i})">Delete</button></div>
+      <div class="r2">
+        <div class="af"><label class="al">Value</label><input class="ai" id="asv-${i}" value="${esc(s.v)}"></div>
+        <div class="af"><label class="al">Label</label><input class="ai" id="asl-${i}" value="${esc(s.l)}"></div>
+      </div>
+      <button class="btn-sv" onclick="saveAStat(${i})">Save</button><span class="ok" id="ok-as-${i}">✓</span>
+    </div>`).join('');
+}
+async function saveAStat(i){
+  const stats=[...(DATA.about?.stats||[])];stats[i]={v:gv(`asv-${i}`),l:gv(`asl-${i}`)};
+  const r=await api('PUT','/api/content/about',{stats});
+  if(r.ok){DATA.about.stats=stats;showOK(`ok-as-${i}`);}
+}
+async function delAStat(i){
+  if(!confirm('Delete stat?'))return;
+  const stats=[...(DATA.about?.stats||[])];stats.splice(i,1);
+  const r=await api('PUT','/api/content/about',{stats});
+  if(r.ok){DATA.about.stats=stats;renderAStatList();}
+}
+async function addAStat(){
+  const stats=[...(DATA.about?.stats||[]),{v:'0',l:'New Stat'}];
+  const r=await api('PUT','/api/content/about',{stats});
+  if(r.ok){DATA.about.stats=stats;renderAStatList();}
+}
+
+// ── VENTURES ──────────────────────────────────────
+function renderProdList(){
+  document.getElementById('prods-list').innerHTML=(DATA.products||[]).map(p=>`
+    <div class="ai-item">
+      <div class="ai-head"><span class="ai-lbl">${esc(p.name)}</span><button class="btn-del" onclick="delProd(${p.id})">Delete</button></div>
+      <div class="logo-box">
+        <div class="logo-box-head">🖼 Venture Logo</div>
+        <div class="logo-prev" id="plp-${p.id}">${p.logo?`<img src="${esc(p.logo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`:`<span class="logo-init">${(p.name||'?').charAt(0)}</span>`}</div>
+        <div class="logo-acts">
+          <label class="btn-up" for="pli-${p.id}">↑ Upload Logo</label>
+          <input type="file" id="pli-${p.id}" accept="image/*,.svg" onchange="uploadProdLogo(${p.id},this)">
+          <button class="btn-rm" id="plr-${p.id}" onclick="removeProdLogo(${p.id})" style="display:${p.logo?'inline-flex':'none'}">✕ Remove</button>
+        </div>
+        <div class="logo-hint">PNG, SVG, WebP — max 5MB. Recommended: square format 256×256.</div>
+      </div>
+      <div class="r2">
+        <div class="af"><label class="al">Name</label><input class="ai" id="pn-${p.id}" value="${esc(p.name)}"></div>
+        <div class="af"><label class="al">Category</label><input class="ai" id="pc-${p.id}" value="${esc(p.cat)}"></div>
+      </div>
+      <div class="af"><label class="al">Description</label><textarea class="at" id="pd-${p.id}">${esc(p.desc)}</textarea></div>
+      <div class="r2">
+        <div class="af"><label class="al">URL (# = not live)</label><input class="ai" id="pu-${p.id}" value="${esc(p.url)}"></div>
+        <div class="af"><label class="al">Tags (comma-separated)</label><input class="ai" id="pt-${p.id}" value="${esc(p.tags||'')}"></div>
+      </div>
+      <div class="af"><label class="al">Operator / Note</label><input class="ai" id="po-${p.id}" value="${esc(p.op||'')}"></div>
+      <button class="btn-sv" onclick="saveProd(${p.id})">Save Venture</button><span class="ok" id="ok-p-${p.id}">✓ Saved</span>
+    </div>`).join('');
+}
+async function saveProd(id){
+  const body={name:gv(`pn-${id}`),cat:gv(`pc-${id}`),desc:gv(`pd-${id}`),url:gv(`pu-${id}`),tags:gv(`pt-${id}`),op:gv(`po-${id}`)};
+  const r=await api('PUT',`/api/content/products/${id}`,body);
+  if(r.ok){const p=DATA.products.find(x=>x.id===id);if(p)Object.assign(p,body);showOK(`ok-p-${id}`);toast(`"${body.name}" saved ✓`);}
+}
+async function delProd(id){
+  if(!confirm('Delete this venture?'))return;
+  const r=await api('DELETE',`/api/content/products/${id}`);
+  if(r.ok){DATA.products=DATA.products.filter(p=>p.id!==id);renderProdList();}
+}
+async function addProd(){
+  const r=await api('POST','/api/content/products',{});
+  if(r.ok){const d=await r.json();DATA.products.push(d.product);renderProdList();toast('New venture added');}
+}
+async function uploadProdLogo(id,inp){
+  const file=inp.files[0];if(!file)return;
+  const fd=new FormData();fd.append('logo',file);
+  const r=await api('POST',`/api/upload/product/${id}`,fd);
+  if(r.ok){const d=await r.json();const p=DATA.products.find(x=>x.id===id);if(p)p.logo=d.url;updateProdLogoPreview(id,d.url);toast('Logo uploaded ✓');}
+  else toast('Upload failed');
+  inp.value='';
+}
+async function removeProdLogo(id){
+  if(!confirm('Remove this logo?'))return;
+  const r=await api('DELETE',`/api/upload/product/${id}`);
+  if(r.ok){const p=DATA.products.find(x=>x.id===id);if(p)p.logo=null;updateProdLogoPreview(id,null);toast('Logo removed');}
+}
+function updateProdLogoPreview(id,url){
+  const prev=document.getElementById(`plp-${id}`);
+  const rm=document.getElementById(`plr-${id}`);
+  if(prev)prev.innerHTML=url?`<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;">`:`<span class="logo-init">${((DATA.products.find(p=>p.id===id)?.name)||'?').charAt(0)}</span>`;
+  if(rm)rm.style.display=url?'inline-flex':'none';
+}
+
+// ── CONTACT ───────────────────────────────────────
+function fillContact(){
+  sv('c-desc',DATA.contact?.desc);
+  renderCItemList();
+}
+function renderCItemList(){
+  document.getElementById('citems-list').innerHTML=(DATA.contact?.items||[]).map((it,i)=>`
+    <div class="ai-item">
+      <div class="ai-head"><span class="ai-lbl">${it.icon} ${esc(it.label)}</span><button class="btn-del" onclick="delCItem(${i})">Delete</button></div>
+      <div class="r3">
+        <div class="af"><label class="al">Icon</label><input class="ai" id="cii-${i}" value="${esc(it.icon)}"></div>
+        <div class="af" style="grid-column:span 2"><label class="al">Label</label><input class="ai" id="cil-${i}" value="${esc(it.label)}"></div>
+      </div>
+      <div class="af"><label class="al">Value</label><input class="ai" id="civ-${i}" value="${esc(it.value)}"></div>
+      <button class="btn-sv" onclick="saveCItem(${i})">Save</button><span class="ok" id="ok-ci-${i}">✓</span>
+    </div>`).join('');
+}
+async function saveContact(){
+  const body={desc:gv('c-desc'),items:DATA.contact?.items||[]};
+  const r=await api('PUT','/api/content/contact',body);
+  if(r.ok){DATA.contact={...DATA.contact,...body};showOK('ok-contact');toast('Contact section saved ✓');}
+}
+async function saveCItem(i){
+  const items=[...(DATA.contact?.items||[])];items[i]={icon:gv(`cii-${i}`),label:gv(`cil-${i}`),value:gv(`civ-${i}`)};
+  const r=await api('PUT','/api/content/contact',{items});
+  if(r.ok){DATA.contact.items=items;showOK(`ok-ci-${i}`);}
+}
+async function delCItem(i){
+  if(!confirm('Delete?'))return;
+  const items=[...(DATA.contact?.items||[])];items.splice(i,1);
+  const r=await api('PUT','/api/content/contact',{items});
+  if(r.ok){DATA.contact.items=items;renderCItemList();}
+}
+async function addCItem(){
+  const items=[...(DATA.contact?.items||[]),{icon:'📌',label:'New Item',value:'Value'}];
+  const r=await api('PUT','/api/content/contact',{items});
+  if(r.ok){DATA.contact.items=items;renderCItemList();}
+}
+
+// ── BRANDING ──────────────────────────────────────
+function renderBranding(){
+  const mainLogo=DATA.branding?.mainLogo;
+  const prev=document.getElementById('ml-prev');
+  const rm=document.getElementById('ml-rm');
+  if(prev&&mainLogo){prev.innerHTML=`<img src="${esc(mainLogo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`;}
+  if(rm)rm.style.display=mainLogo?'inline-flex':'none';
+  // Service icon list
+  document.getElementById('svc-logos-list').innerHTML=(DATA.services||[]).map(s=>`
+    <div class="ai-item">
+      <div class="ai-head"><span class="ai-lbl">${esc(s.icon)} ${esc(s.title)}</span></div>
+      <div class="logo-prev" id="slp-${s.id}">${s.logo?`<img src="${esc(s.logo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`:`<span style="font-size:1.4rem;">${s.icon}</span>`}</div>
+      <div class="logo-acts" style="margin-top:10px;">
+        <label class="btn-up" for="sli-${s.id}">↑ Upload Icon</label>
+        <input type="file" id="sli-${s.id}" accept="image/*,.svg" onchange="uploadSvcLogo(${s.id},this)">
+        <button class="btn-rm" id="slr-${s.id}" onclick="removeSvcLogo(${s.id})" style="display:${s.logo?'inline-flex':'none'}">✕ Remove</button>
+      </div>
+      <div class="logo-hint">64×64 or 128×128 recommended.</div>
+    </div>`).join('');
+}
+async function uploadMainLogo(inp){
+  const file=inp.files[0];if(!file)return;
+  const fd=new FormData();fd.append('logo',file);
+  const r=await api('POST','/api/upload/main-logo',fd);
+  if(r.ok){const d=await r.json();if(!DATA.branding)DATA.branding={};DATA.branding.mainLogo=d.url;renderBranding();toast('Main logo uploaded ✓');}
+  else toast('Upload failed');inp.value='';
+}
+async function removeMainLogo(){
+  if(!confirm('Remove the main logo?'))return;
+  const r=await api('DELETE','/api/upload/main-logo');
+  if(r.ok){if(DATA.branding)DATA.branding.mainLogo=null;renderBranding();toast('Logo removed');}
+}
+async function uploadSvcLogo(id,inp){
+  const file=inp.files[0];if(!file)return;
+  const fd=new FormData();fd.append('logo',file);
+  const r=await api('POST',`/api/upload/service/${id}`,fd);
+  if(r.ok){const d=await r.json();const s=DATA.services.find(x=>x.id===id);if(s)s.logo=d.url;updateSvcLogoPreview(id,d.url);toast('Icon uploaded ✓');}
+  inp.value='';
+}
+async function removeSvcLogo(id){
+  if(!confirm('Remove icon?'))return;
+  const r=await api('DELETE',`/api/upload/service/${id}`);
+  if(r.ok){const s=DATA.services.find(x=>x.id===id);if(s)s.logo=null;updateSvcLogoPreview(id,null);}
+}
+function updateSvcLogoPreview(id,url){
+  const p=document.getElementById(`slp-${id}`);const rm=document.getElementById(`slr-${id}`);
+  const svc=DATA.services.find(x=>x.id===id);
+  if(p)p.innerHTML=url?`<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;">`:`<span style="font-size:1.4rem;">${svc?.icon||'?'}</span>`;
+  if(rm)rm.style.display=url?'inline-flex':'none';
+}
+
+// ── SETTINGS ──────────────────────────────────────
+async function resetContent(){
+  if(!confirm('Reset all text content to defaults? This cannot be undone.'))return;
+  // Reset by re-fetching defaults from server (server uses defaults when content.json is wiped)
+  toast('Use the server to reset — delete data/content.json and restart.');
+}
+
+// ── Check existing session ────────────────────────
+(async()=>{
+  const saved=sessionStorage.getItem('vltx_tok');
+  if(saved){
+    TOKEN=saved;
+    const r=await fetch('/api/auth/verify',{method:'POST',headers:{'Authorization':'Bearer '+saved}});
+    if(r.ok){
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('admin-shell').classList.add('show');
+      await loadAll();
+      return;
+    }
+    sessionStorage.removeItem('vltx_tok');TOKEN='';
+  }
+  document.getElementById('login-screen').style.display='flex';
+})();
+</script>
+</body>
+</html>
