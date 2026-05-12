@@ -17,13 +17,28 @@ const JWT_SECRET = process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
 // ─────────────────────────────────────────────
 // PATHS
 // ─────────────────────────────────────────────
-const DATA_PATH   = path.join(__dirname, 'data', 'content.json');
-const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
+// const DATA_PATH   = path.join(__dirname, 'data', 'content.json');
+// const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
+// const PUBLIC_DIR  = path.join(__dirname, 'public');
+
+const DATA_PATH   = path.join('/tmp', 'content.json');
+const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
+
+const UPLOAD_DIR  = path.join('/tmp', 'uploads');
 const PUBLIC_DIR  = path.join(__dirname, 'public');
 
-[path.join(__dirname, 'data'), UPLOAD_DIR].forEach(d => {
+// [path.join(__dirname, 'data'), UPLOAD_DIR].forEach(d => {
+//   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+// });
+
+[UPLOAD_DIR].forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
+
+// Copy initial content.json to writable /tmp
+if (!fs.existsSync(DATA_PATH)) {
+  fs.copyFileSync(SOURCE_DATA, DATA_PATH);
+}
 
 // ─────────────────────────────────────────────
 // CONTENT HELPERS
