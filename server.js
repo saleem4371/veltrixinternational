@@ -1,4 +1,3 @@
-
 'use strict';
 require('dotenv').config();
 
@@ -18,68 +17,47 @@ const JWT_SECRET = process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
 // ─────────────────────────────────────────────
 // PATHS
 // ─────────────────────────────────────────────
-// const DATA_PATH   = path.join(__dirname, 'data', 'content.json');
-// const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
-// const PUBLIC_DIR  = path.join(__dirname, 'public');
-
-// const DATA_PATH   = path.join('/tmp', 'content.json');
-// const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
-
- const DATA_DIR = path.join(__dirname, 'data');
-// const DATA_PATH = path.join(DATA_DIR, 'content.json');
-
-const DATA_PATH = '/tmp/content.json';
-
-if (!fs.existsSync(DATA_PATH)) {
-  fs.copyFileSync(
-    path.join(__dirname, 'data/content.json'),
-    DATA_PATH
-  );
-}
-
-
-const UPLOAD_DIR  = path.join('/tmp', 'uploads');
 const PUBLIC_DIR  = path.join(__dirname, 'public');
+const UPLOAD_DIR  = path.join(__dirname, 'data', 'uploads'); // ✅ persistent, not /tmp
+const DATA_PATH   = path.join(__dirname, 'data', 'content.json'); // ✅ persistent, not /tmp
 
-// [path.join(__dirname, 'data'), UPLOAD_DIR].forEach(d => {
-//   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-// });
-
-[UPLOAD_DIR].forEach(d => {
+// Ensure directories exist
+[path.join(__dirname, 'data'), UPLOAD_DIR].forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
-// Copy initial content.json to writable /tmp
-// if (!fs.existsSync(DATA_PATH)) {
-//   fs.copyFileSync(SOURCE_DATA, DATA_PATH);
-// }
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+// Seed content.json from bundled default if missing
+const DEFAULT_CONTENT = path.join(__dirname, 'data', 'content.default.json');
+if (!fs.existsSync(DATA_PATH)) {
+  if (fs.existsSync(DEFAULT_CONTENT)) {
+    fs.copyFileSync(DEFAULT_CONTENT, DATA_PATH);
+    console.log('📄  Seeded content.json from default.');
+  } else {
+    // No default — write empty scaffold so the app doesn't crash
+    fs.writeFileSync(DATA_PATH, JSON.stringify({
+      hero: {}, about: {}, contact: {}, branding: {},
+      services: [], products: []
+    }, null, 2));
+    console.warn('⚠  No content.default.json found — wrote empty scaffold to data/content.json');
+  }
 }
 
 // ─────────────────────────────────────────────
 // CONTENT HELPERS
 // ─────────────────────────────────────────────
 function readContent() {
-  try { return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8')); }
-  catch (e) {
+  try {
+    return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
+  } catch (e) {
     console.error('Error reading content.json:', e.message);
     return {};
   }
 }
 
-// function writeContent(data) {
-//   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
-// }
 function writeContent(data) {
+  // Atomic write: write to temp file first, then rename
   const tempPath = DATA_PATH + '.tmp';
-
-  fs.writeFileSync(
-    tempPath,
-    JSON.stringify(data, null, 2),
-    'utf8'
-  );
-
+  fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8');
   fs.renameSync(tempPath, DATA_PATH);
 }
 
@@ -105,7 +83,7 @@ const fileFilter = (_req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
 });
 
 // ─────────────────────────────────────────────
@@ -128,9 +106,14 @@ function createTransport() {
 // ─────────────────────────────────────────────
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// ✅ Serve uploaded files from persistent data/uploads directory
+app.use('/uploads', express.static(UPLOAD_DIR));
+
+// Serve everything else from public/
 app.use(express.static(PUBLIC_DIR));
 
-// Simple rate limiter for auth endpoint (no extra deps)
+// Simple rate limiter for auth endpoint
 const loginAttempts = new Map();
 function authRateLimit(req, res, next) {
   const ip  = req.ip || req.socket.remoteAddress;
@@ -168,7 +151,6 @@ app.post('/api/auth/login', authRateLimit, async (req, res) => {
 
     const storedHash = process.env.ADMIN_PASSWORD_HASH;
     if (!storedHash) {
-      // Dev fallback — warn in console
       console.warn('\x1b[33m⚠  ADMIN_PASSWORD_HASH not set in .env — using default dev password.\x1b[0m');
       if (password !== 'Veltrix@2025') return res.status(401).json({ error: 'Invalid password' });
     } else {
@@ -176,7 +158,11 @@ app.post('/api/auth/login', authRateLimit, async (req, res) => {
       if (!ok) return res.status(401).json({ error: 'Invalid password' });
     }
 
-    const token = jwt.sign({ admin: true, iat: Math.floor(Date.now() / 1000) }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(
+      { admin: true, iat: Math.floor(Date.now() / 1000) },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
     res.json({ token, expiresIn: 86400 });
   } catch (err) {
     console.error('Login error:', err);
@@ -184,7 +170,7 @@ app.post('/api/auth/login', authRateLimit, async (req, res) => {
   }
 });
 
-// POST /api/auth/verify  — check if token is still valid
+// POST /api/auth/verify
 app.post('/api/auth/verify', requireAuth, (_req, res) => {
   res.json({ valid: true });
 });
@@ -193,10 +179,7 @@ app.post('/api/auth/verify', requireAuth, (_req, res) => {
 // CONTENT ROUTES
 // ─────────────────────────────────────────────
 
-// GET /api/content — public, returns all content
-// app.get('/api/content', (_req, res) => {
-//   res.json(readContent());
-// });
+// GET /api/content — public
 app.get('/api/content', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json(readContent());
@@ -228,12 +211,10 @@ app.put('/api/content/contact', requireAuth, (req, res) => {
 
 // ── Services ──────────────────────────────────
 
-// GET /api/content/services
 app.get('/api/content/services', (_req, res) => {
   res.json(readContent().services || []);
 });
 
-// PUT /api/content/services/:id
 app.put('/api/content/services/:id', requireAuth, (req, res) => {
   const data = readContent();
   const id   = parseInt(req.params.id);
@@ -244,15 +225,14 @@ app.put('/api/content/services/:id', requireAuth, (req, res) => {
   res.json({ ok: true, service: data.services[idx] });
 });
 
-// POST /api/content/services
 app.post('/api/content/services', requireAuth, (req, res) => {
   const data = readContent();
   const newService = {
     id:   Date.now(),
     icon: '✨',
-    title:'New Service',
-    desc: 'Describe this service...',
-    logo: null,
+    title: 'New Service',
+    desc:  'Describe this service...',
+    logo:  null,
     ...req.body
   };
   data.services.push(newService);
@@ -260,13 +240,11 @@ app.post('/api/content/services', requireAuth, (req, res) => {
   res.status(201).json({ ok: true, service: newService });
 });
 
-// DELETE /api/content/services/:id
 app.delete('/api/content/services/:id', requireAuth, (req, res) => {
   const data = readContent();
   const id   = parseInt(req.params.id);
   const svc  = data.services.find(s => s.id === id);
   if (!svc) return res.status(404).json({ error: 'Service not found' });
-  // Clean up logo file
   if (svc.logo) deleteUploadedFile(svc.logo);
   data.services = data.services.filter(s => s.id !== id);
   writeContent(data);
@@ -275,7 +253,6 @@ app.delete('/api/content/services/:id', requireAuth, (req, res) => {
 
 // ── Ventures / Products ───────────────────────
 
-// PUT /api/content/products/:id
 app.put('/api/content/products/:id', requireAuth, (req, res) => {
   const data = readContent();
   const id   = parseInt(req.params.id);
@@ -286,7 +263,6 @@ app.put('/api/content/products/:id', requireAuth, (req, res) => {
   res.json({ ok: true, product: data.products[idx] });
 });
 
-// POST /api/content/products
 app.post('/api/content/products', requireAuth, (req, res) => {
   const data = readContent();
   const newProduct = {
@@ -305,7 +281,6 @@ app.post('/api/content/products', requireAuth, (req, res) => {
   res.status(201).json({ ok: true, product: newProduct });
 });
 
-// DELETE /api/content/products/:id
 app.delete('/api/content/products/:id', requireAuth, (req, res) => {
   const data = readContent();
   const id   = parseInt(req.params.id);
@@ -326,14 +301,15 @@ function deleteUploadedFile(urlPath) {
     const filename = path.basename(urlPath);
     const fullPath = path.join(UPLOAD_DIR, filename);
     if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-  } catch (e) { console.warn('Could not delete file:', e.message); }
+  } catch (e) {
+    console.warn('Could not delete file:', e.message);
+  }
 }
 
 // POST /api/upload/main-logo
 app.post('/api/upload/main-logo', requireAuth, upload.single('logo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   const data = readContent();
-  // Delete old logo
   if (data.branding?.mainLogo) deleteUploadedFile(data.branding.mainLogo);
   if (!data.branding) data.branding = {};
   data.branding.mainLogo = '/uploads/' + req.file.filename;
@@ -341,7 +317,6 @@ app.post('/api/upload/main-logo', requireAuth, upload.single('logo'), (req, res)
   res.json({ ok: true, url: data.branding.mainLogo });
 });
 
-// DELETE /api/upload/main-logo
 app.delete('/api/upload/main-logo', requireAuth, (req, res) => {
   const data = readContent();
   if (data.branding?.mainLogo) {
@@ -365,7 +340,6 @@ app.post('/api/upload/product/:id', requireAuth, upload.single('logo'), (req, re
   res.json({ ok: true, url: prod.logo });
 });
 
-// DELETE /api/upload/product/:id
 app.delete('/api/upload/product/:id', requireAuth, (req, res) => {
   const data = readContent();
   const id   = parseInt(req.params.id);
@@ -389,7 +363,6 @@ app.post('/api/upload/service/:id', requireAuth, upload.single('logo'), (req, re
   res.json({ ok: true, url: svc.logo });
 });
 
-// DELETE /api/upload/service/:id
 app.delete('/api/upload/service/:id', requireAuth, (req, res) => {
   const data = readContent();
   const id   = parseInt(req.params.id);
@@ -409,7 +382,6 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'First name, email, and message are required.' });
   }
 
-  // Send email if SMTP is configured
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
       const transporter = createTransport();
@@ -428,23 +400,20 @@ app.post('/api/contact', async (req, res) => {
             </table>
             <h3 style="margin-top:20px;color:#333;">Message</h3>
             <div style="background:#f5f5f5;padding:16px;border-radius:8px;line-height:1.6;">
-              ${String(message).replace(/\n/g,'<br>')}
+              ${String(message).replace(/\n/g, '<br>')}
             </div>
-            <p style="font-size:12px;color:#999;margin-top:20px;">
-              Sent via veltrix.ae contact form
-            </p>
+            <p style="font-size:12px;color:#999;margin-top:20px;">Sent via veltrix.ae contact form</p>
           </div>`
       });
     } catch (err) {
       console.error('Email send error:', err.message);
-      // Still return 200 — don't break UX if email fails
     }
   } else {
     console.log('\x1b[33m⚠  SMTP not configured — contact form submission logged only.\x1b[0m');
     console.log({ firstName, lastName, email, subject, message });
   }
 
-  res.json({ ok: true, message: 'Message received. We\'ll be in touch soon!' });
+  res.json({ ok: true, message: "Message received. We'll be in touch soon!" });
 });
 
 // ─────────────────────────────────────────────
@@ -483,4 +452,6 @@ app.listen(PORT, () => {
     console.warn('\x1b[33m  ⚠  ADMIN_PASSWORD_HASH not set — using default dev password (Veltrix@2025)\x1b[0m');
     console.warn('\x1b[33m  ⚠  Set ADMIN_PASSWORD_HASH in .env before going live!\x1b[0m\n');
   }
-}); //here not updting json file shoeing updted if refresh dt old only 
+  console.log(`  📁  Data:    ${DATA_PATH}`);
+  console.log(`  🖼   Uploads: ${UPLOAD_DIR}\n`);
+});
