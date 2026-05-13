@@ -21,8 +21,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
 // const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
 // const PUBLIC_DIR  = path.join(__dirname, 'public');
 
-const DATA_PATH   = path.join('/tmp', 'content.json');
-const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
+// const DATA_PATH   = path.join('/tmp', 'content.json');
+// const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
+
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_PATH = path.join(DATA_DIR, 'content.json');
+
+
 
 const UPLOAD_DIR  = path.join('/tmp', 'uploads');
 const PUBLIC_DIR  = path.join(__dirname, 'public');
@@ -36,8 +41,12 @@ const PUBLIC_DIR  = path.join(__dirname, 'public');
 });
 
 // Copy initial content.json to writable /tmp
-if (!fs.existsSync(DATA_PATH)) {
-  fs.copyFileSync(SOURCE_DATA, DATA_PATH);
+// if (!fs.existsSync(DATA_PATH)) {
+//   fs.copyFileSync(SOURCE_DATA, DATA_PATH);
+// }
+
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 // ─────────────────────────────────────────────
@@ -407,48 +416,971 @@ app.post('/api/contact', async (req, res) => {
       console.error('Email send error:', err.message);
       // Still return 200 — don't break UX if email fails
     }
-  } else {
-    console.log('\x1b[33m⚠  SMTP not configured — contact form submission logged only.\x1b[0m');
-    console.log({ firstName, lastName, email, subject, message });
-  }
+  } else {'use strict';
+require('dotenv').config();
 
-  res.json({ ok: true, message: 'Message received. We\'ll be in touch soon!' });
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+
+const app = express();
+
+const PORT = process.env.PORT || 8002;
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
+
+// ─────────────────────────────────────────────
+// PATHS
+// ─────────────────────────────────────────────
+
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_PATH = path.join(DATA_DIR, 'content.json');
+
+const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
+const PUBLIC_DIR = path.join(__dirname, 'public');
+
+// Ensure folders exist
+[DATA_DIR, UPLOAD_DIR].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+// Create content.json if missing
+if (!fs.existsSync(DATA_PATH)) {
+  fs.writeFileSync(
+    DATA_PATH,
+    JSON.stringify(
+      {
+        hero: {},
+        about: {},
+        contact: {},
+        branding: {},
+        services: [],
+        products: [],
+      },
+      null,
+      2
+    ),
+    'utf8'
+  );
+}
+
+// ─────────────────────────────────────────────
+// CONTENT HELPERS
+// ─────────────────────────────────────────────
+
+function readContent() {
+  try {
+    const raw = fs.readFileSync(DATA_PATH, 'utf8');
+
+    if (!raw.trim()) {
+      return {
+        hero: {},
+        about: {},
+        contact: {},
+        branding: {},
+        services: [],
+        products: [],
+      };
+    }
+
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Error reading content.json:', err.message);
+
+    return {
+      hero: {},
+      about: {},
+      contact: {},
+      branding: {},
+      services: [],
+      products: [],
+    };
+  }
+}
+
+// Atomic write (safe)
+function writeContent(data) {
+  try {
+    const tempPath = DATA_PATH + '.tmp';
+
+    fs.writeFileSync(
+      tempPath,
+      JSON.stringify(data, null, 2),
+      'utf8'
+    );
+
+    fs.renameSync(tempPath, DATA_PATH);
+  } catch (err) {
+    console.error('Error writing content.json:', err.message);
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────
+// MULTER — IMAGE UPLOAD
+// ─────────────────────────────────────────────
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    const name =
+      crypto.randomBytes(12).toString('hex') + ext;
+
+    cb(null, name);
+  },
+});
+
+const fileFilter = (_req, file, cb) => {
+  const allowed = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp',
+    '.svg',
+    '.gif',
+  ];
+
+  const ext = path
+    .extname(file.originalname)
+    .toLowerCase();
+
+  if (allowed.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        'Only image files are allowed (jpg, png, webp, svg, gif)'
+      )
+    );
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
 });
 
 // ─────────────────────────────────────────────
-// SPA FALLBACK — admin.html
+// NODEMAILER
 // ─────────────────────────────────────────────
+
+function createTransport() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+
+    port: parseInt(
+      process.env.SMTP_PORT || '587'
+    ),
+
+    secure:
+      process.env.SMTP_SECURE === 'true',
+
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
+
+// ─────────────────────────────────────────────
+// MIDDLEWARE
+// ─────────────────────────────────────────────
+
+app.use(
+  express.json({
+    limit: '2mb',
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: '2mb',
+  })
+);
+
+// Disable cache
+app.use((req, res, next) => {
+  res.setHeader(
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, private'
+  );
+
+  next();
+});
+
+app.use(express.static(PUBLIC_DIR));
+
+// ─────────────────────────────────────────────
+// RATE LIMITER
+// ─────────────────────────────────────────────
+
+const loginAttempts = new Map();
+
+function authRateLimit(req, res, next) {
+  const ip =
+    req.ip || req.socket.remoteAddress;
+
+  const now = Date.now();
+
+  const rec = loginAttempts.get(ip) || {
+    count: 0,
+    reset: now + 60000,
+  };
+
+  if (now > rec.reset) {
+    rec.count = 0;
+    rec.reset = now + 60000;
+  }
+
+  rec.count++;
+
+  loginAttempts.set(ip, rec);
+
+  if (rec.count > 10) {
+    return res.status(429).json({
+      error:
+        'Too many attempts. Try again in a minute.',
+    });
+  }
+
+  next();
+}
+
+// ─────────────────────────────────────────────
+// AUTH MIDDLEWARE
+// ─────────────────────────────────────────────
+
+function requireAuth(req, res, next) {
+  const auth =
+    req.headers.authorization || '';
+
+  const token = auth.startsWith('Bearer ')
+    ? auth.slice(7)
+    : '';
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'Unauthorized',
+    });
+  }
+
+  try {
+    req.user = jwt.verify(
+      token,
+      JWT_SECRET
+    );
+
+    next();
+  } catch {
+    return res.status(401).json({
+      error:
+        'Invalid or expired token. Please log in again.',
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+// AUTH ROUTES
+// ─────────────────────────────────────────────
+
+app.post(
+  '/api/auth/login',
+  authRateLimit,
+  async (req, res) => {
+    try {
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({
+          error: 'Password is required',
+        });
+      }
+
+      const storedHash =
+        process.env.ADMIN_PASSWORD_HASH;
+
+      if (!storedHash) {
+        console.warn(
+          '\x1b[33m⚠ ADMIN_PASSWORD_HASH not set — using dev password\x1b[0m'
+        );
+
+        if (password !== 'Veltrix@2025') {
+          return res.status(401).json({
+            error: 'Invalid password',
+          });
+        }
+      } else {
+        const ok = await bcrypt.compare(
+          password,
+          storedHash
+        );
+
+        if (!ok) {
+          return res.status(401).json({
+            error: 'Invalid password',
+          });
+        }
+      }
+
+      const token = jwt.sign(
+        {
+          admin: true,
+          iat: Math.floor(Date.now() / 1000),
+        },
+        JWT_SECRET,
+        {
+          expiresIn: '24h',
+        }
+      );
+
+      res.json({
+        token,
+        expiresIn: 86400,
+      });
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        error: 'Server error',
+      });
+    }
+  }
+);
+
+app.post(
+  '/api/auth/verify',
+  requireAuth,
+  (_req, res) => {
+    res.json({
+      valid: true,
+    });
+  }
+);
+
+// ─────────────────────────────────────────────
+// CONTENT ROUTES
+// ─────────────────────────────────────────────
+
+app.get('/api/content', (_req, res) => {
+  res.json(readContent());
+});
+
+// HERO
+app.put(
+  '/api/content/hero',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    data.hero = {
+      ...data.hero,
+      ...req.body,
+    };
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+    });
+  }
+);
+
+// ABOUT
+app.put(
+  '/api/content/about',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    data.about = {
+      ...data.about,
+      ...req.body,
+    };
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+    });
+  }
+);
+
+// CONTACT
+app.put(
+  '/api/content/contact',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    data.contact = {
+      ...data.contact,
+      ...req.body,
+    };
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+    });
+  }
+);
+
+// ─────────────────────────────────────────────
+// SERVICES
+// ─────────────────────────────────────────────
+
+app.get(
+  '/api/content/services',
+  (_req, res) => {
+    res.json(
+      readContent().services || []
+    );
+  }
+);
+
+app.post(
+  '/api/content/services',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    const newService = {
+      id: Date.now(),
+      icon: '✨',
+      title: 'New Service',
+      desc: 'Describe this service...',
+      logo: null,
+      ...req.body,
+    };
+
+    data.services.push(newService);
+
+    writeContent(data);
+
+    res.status(201).json({
+      ok: true,
+      service: newService,
+    });
+  }
+);
+
+app.put(
+  '/api/content/services/:id',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    const id = parseInt(
+      req.params.id
+    );
+
+    const idx =
+      data.services.findIndex(
+        (s) => s.id === id
+      );
+
+    if (idx === -1) {
+      return res.status(404).json({
+        error: 'Service not found',
+      });
+    }
+
+    data.services[idx] = {
+      ...data.services[idx],
+      ...req.body,
+    };
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+      service: data.services[idx],
+    });
+  }
+);
+
+app.delete(
+  '/api/content/services/:id',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    const id = parseInt(
+      req.params.id
+    );
+
+    const svc = data.services.find(
+      (s) => s.id === id
+    );
+
+    if (!svc) {
+      return res.status(404).json({
+        error: 'Service not found',
+      });
+    }
+
+    if (svc.logo) {
+      deleteUploadedFile(svc.logo);
+    }
+
+    data.services =
+      data.services.filter(
+        (s) => s.id !== id
+      );
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+    });
+  }
+);
+
+// ─────────────────────────────────────────────
+// PRODUCTS
+// ─────────────────────────────────────────────
+
+app.post(
+  '/api/content/products',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    const newProduct = {
+      id: Date.now(),
+      name: 'New Venture',
+      cat: 'Category',
+      desc: 'Describe this venture...',
+      url: '#',
+      tags: 'Tag1, Tag2',
+      op: 'A Veltrix Product',
+      logo: null,
+      ...req.body,
+    };
+
+    data.products.push(newProduct);
+
+    writeContent(data);
+
+    res.status(201).json({
+      ok: true,
+      product: newProduct,
+    });
+  }
+);
+
+app.put(
+  '/api/content/products/:id',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    const id = parseInt(
+      req.params.id
+    );
+
+    const idx =
+      data.products.findIndex(
+        (p) => p.id === id
+      );
+
+    if (idx === -1) {
+      return res.status(404).json({
+        error: 'Venture not found',
+      });
+    }
+
+    data.products[idx] = {
+      ...data.products[idx],
+      ...req.body,
+    };
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+      product: data.products[idx],
+    });
+  }
+);
+
+app.delete(
+  '/api/content/products/:id',
+  requireAuth,
+  (req, res) => {
+    const data = readContent();
+
+    const id = parseInt(
+      req.params.id
+    );
+
+    const prod =
+      data.products.find(
+        (p) => p.id === id
+      );
+
+    if (!prod) {
+      return res.status(404).json({
+        error: 'Venture not found',
+      });
+    }
+
+    if (prod.logo) {
+      deleteUploadedFile(prod.logo);
+    }
+
+    data.products =
+      data.products.filter(
+        (p) => p.id !== id
+      );
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+    });
+  }
+);
+
+// ─────────────────────────────────────────────
+// FILE HELPERS
+// ─────────────────────────────────────────────
+
+function deleteUploadedFile(urlPath) {
+  try {
+    const filename =
+      path.basename(urlPath);
+
+    const fullPath = path.join(
+      UPLOAD_DIR,
+      filename
+    );
+
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
+  } catch (err) {
+    console.warn(
+      'Could not delete file:',
+      err.message
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// UPLOAD ROUTES
+// ─────────────────────────────────────────────
+
+// MAIN LOGO
+app.post(
+  '/api/upload/main-logo',
+  requireAuth,
+  upload.single('logo'),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No file uploaded',
+      });
+    }
+
+    const data = readContent();
+
+    if (data.branding?.mainLogo) {
+      deleteUploadedFile(
+        data.branding.mainLogo
+      );
+    }
+
+    if (!data.branding) {
+      data.branding = {};
+    }
+
+    data.branding.mainLogo =
+      '/uploads/' + req.file.filename;
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+      url: data.branding.mainLogo,
+    });
+  }
+);
+
+// PRODUCT LOGO
+app.post(
+  '/api/upload/product/:id',
+  requireAuth,
+  upload.single('logo'),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No file uploaded',
+      });
+    }
+
+    const data = readContent();
+
+    const id = parseInt(
+      req.params.id
+    );
+
+    const prod =
+      data.products.find(
+        (p) => p.id === id
+      );
+
+    if (!prod) {
+      return res.status(404).json({
+        error: 'Venture not found',
+      });
+    }
+
+    if (prod.logo) {
+      deleteUploadedFile(prod.logo);
+    }
+
+    prod.logo =
+      '/uploads/' + req.file.filename;
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+      url: prod.logo,
+    });
+  }
+);
+
+// SERVICE LOGO
+app.post(
+  '/api/upload/service/:id',
+  requireAuth,
+  upload.single('logo'),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No file uploaded',
+      });
+    }
+
+    const data = readContent();
+
+    const id = parseInt(
+      req.params.id
+    );
+
+    const svc = data.services.find(
+      (s) => s.id === id
+    );
+
+    if (!svc) {
+      return res.status(404).json({
+        error: 'Service not found',
+      });
+    }
+
+    if (svc.logo) {
+      deleteUploadedFile(svc.logo);
+    }
+
+    svc.logo =
+      '/uploads/' + req.file.filename;
+
+    writeContent(data);
+
+    res.json({
+      ok: true,
+      url: svc.logo,
+    });
+  }
+);
+
+// ─────────────────────────────────────────────
+// CONTACT FORM
+// ─────────────────────────────────────────────
+
+app.post(
+  '/api/contact',
+  async (req, res) => {
+    try {
+      const {
+        firstName,
+        lastName,
+        email,
+        subject,
+        message,
+      } = req.body;
+
+      if (
+        !firstName ||
+        !email ||
+        !message
+      ) {
+        return res.status(400).json({
+          error:
+            'First name, email and message are required.',
+        });
+      }
+
+      if (
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASS
+      ) {
+        const transporter =
+          createTransport();
+
+        await transporter.sendMail({
+          from:
+            process.env.CONTACT_FROM ||
+            process.env.SMTP_USER,
+
+          to:
+            process.env
+              .CONTACT_RECIPIENT ||
+            process.env.SMTP_USER,
+
+          replyTo: email,
+
+          subject: `[Veltrix Contact] ${
+            subject || 'General Inquiry'
+          }`,
+
+          html: `
+            <h2>New Contact Form Submission</h2>
+
+            <p><strong>Name:</strong> ${firstName} ${
+            lastName || ''
+          }</p>
+
+            <p><strong>Email:</strong> ${email}</p>
+
+            <p><strong>Subject:</strong> ${
+              subject || 'General Inquiry'
+            }</p>
+
+            <p><strong>Message:</strong></p>
+
+            <div>
+              ${String(message).replace(
+                /\n/g,
+                '<br>'
+              )}
+            </div>
+          `,
+        });
+      }
+
+      res.json({
+        ok: true,
+        message:
+          'Message received successfully.',
+      });
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        error: 'Failed to send message',
+      });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────
+// ADMIN PAGE
+// ─────────────────────────────────────────────
+
 app.get('/admin', (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
+  res.sendFile(
+    path.join(PUBLIC_DIR, 'admin.html')
+  );
 });
 
 app.get('/admin.html', (_req, res) => {
-  res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
+  res.sendFile(
+    path.join(PUBLIC_DIR, 'admin.html')
+  );
 });
 
 // ─────────────────────────────────────────────
 // ERROR HANDLER
 // ─────────────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error(err.message);
-  if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'File too large. Max 5MB.' });
-  res.status(500).json({ error: err.message || 'Internal server error' });
-});
+
+app.use(
+  (err, _req, res, _next) => {
+    console.error(err);
+
+    if (
+      err.code === 'LIMIT_FILE_SIZE'
+    ) {
+      return res.status(413).json({
+        error:
+          'File too large. Max size 5MB.',
+      });
+    }
+
+    res.status(500).json({
+      error:
+        err.message ||
+        'Internal server error',
+    });
+  }
+);
 
 // ─────────────────────────────────────────────
-// START
+// START SERVER
 // ─────────────────────────────────────────────
+
 app.listen(PORT, () => {
   console.log('\x1b[36m');
-  console.log('  ╔══════════════════════════════════════╗');
-  console.log('  ║   VELTRIX INTERNATIONAL — Phase 2    ║');
-  console.log(`  ║   Server running on port ${PORT}         ║`);
-  console.log(`  ║   http://localhost:${PORT}               ║`);
-  console.log(`  ║   Admin: http://localhost:${PORT}/admin   ║`);
-  console.log('  ╚══════════════════════════════════════╝');
+
+  console.log(
+    '╔══════════════════════════════════════╗'
+  );
+
+  console.log(
+    '║   VELTRIX INTERNATIONAL SERVER      ║'
+  );
+
+  console.log(
+    `║   Running on port ${PORT}                  ║`
+  );
+
+  console.log(
+    `║   http://localhost:${PORT}                 ║`
+  );
+
+  console.log(
+    `║   Admin: /admin                            ║`
+  );
+
+  console.log(
+    '╚══════════════════════════════════════╝'
+  );
+
   console.log('\x1b[0m');
-  if (!process.env.ADMIN_PASSWORD_HASH) {
-    console.warn('\x1b[33m  ⚠  ADMIN_PASSWORD_HASH not set — using default dev password (Veltrix@2025)\x1b[0m');
-    console.warn('\x1b[33m  ⚠  Set ADMIN_PASSWORD_HASH in .env before going live!\x1b[0m\n');
+
+  if (
+    !process.env.ADMIN_PASSWORD_HASH
+  ) {
+    console.warn(
+      '\x1b[33m⚠ ADMIN_PASSWORD_HASH not set — using dev password\x1b[0m'
+    );
   }
 });
