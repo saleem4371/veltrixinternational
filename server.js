@@ -25,8 +25,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
 // const DATA_PATH   = path.join('/tmp', 'content.json');
 // const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
 
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_PATH = path.join(DATA_DIR, 'content.json');
+// const DATA_DIR = path.join(__dirname, 'data');
+// const DATA_PATH = path.join(DATA_DIR, 'content.json');
+
+const DATA_PATH = '/tmp/content.json';
+
+if (!fs.existsSync(DATA_PATH)) {
+  fs.copyFileSync(
+    path.join(__dirname, 'data/content.json'),
+    DATA_PATH
+  );
+}
 
 
 const UPLOAD_DIR  = path.join('/tmp', 'uploads');
