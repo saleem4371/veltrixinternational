@@ -452,4 +452,4 @@ app.listen(PORT, () => {
     console.warn('\x1b[33m  ⚠  ADMIN_PASSWORD_HASH not set — using default dev password (Veltrix@2025)\x1b[0m');
     console.warn('\x1b[33m  ⚠  Set ADMIN_PASSWORD_HASH in .env before going live!\x1b[0m\n');
   }
-}); here not updting json file shoeing updted if refresh dt old only 
+}); //here not updting json file shoeing updted if refresh dt old only 
