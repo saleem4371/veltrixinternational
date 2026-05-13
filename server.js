@@ -22,8 +22,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
 // const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
 // const PUBLIC_DIR  = path.join(__dirname, 'public');
 
-const DATA_PATH   = path.join('/tmp', 'content.json');
-const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
+// const DATA_PATH   = path.join('/tmp', 'content.json');
+// const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
+
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_PATH = path.join(DATA_DIR, 'content.json');
+
 
 const UPLOAD_DIR  = path.join('/tmp', 'uploads');
 const PUBLIC_DIR  = path.join(__dirname, 'public');
@@ -37,8 +41,11 @@ const PUBLIC_DIR  = path.join(__dirname, 'public');
 });
 
 // Copy initial content.json to writable /tmp
-if (!fs.existsSync(DATA_PATH)) {
-  fs.copyFileSync(SOURCE_DATA, DATA_PATH);
+// if (!fs.existsSync(DATA_PATH)) {
+//   fs.copyFileSync(SOURCE_DATA, DATA_PATH);
+// }
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 // ─────────────────────────────────────────────
@@ -52,8 +59,19 @@ function readContent() {
   }
 }
 
+// function writeContent(data) {
+//   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
+// }
 function writeContent(data) {
-  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
+  const tempPath = DATA_PATH + '.tmp';
+
+  fs.writeFileSync(
+    tempPath,
+    JSON.stringify(data, null, 2),
+    'utf8'
+  );
+
+  fs.renameSync(tempPath, DATA_PATH);
 }
 
 // ─────────────────────────────────────────────
@@ -167,7 +185,11 @@ app.post('/api/auth/verify', requireAuth, (_req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /api/content — public, returns all content
+// app.get('/api/content', (_req, res) => {
+//   res.json(readContent());
+// });
 app.get('/api/content', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.json(readContent());
 });
 
