@@ -13,4 +13,8 @@ router.post('/products', ctrl.createProduct);
 router.put('/products/:id', ctrl.updateProduct);
 router.delete('/products/:id', ctrl.deleteProduct);
 
+router.post('/services', ctrl.createService);
+router.put('/services/:id', ctrl.updateService);
+router.delete('/services/:id', ctrl.deleteService);
+
 module.exports = router;
