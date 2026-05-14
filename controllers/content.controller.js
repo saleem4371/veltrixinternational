@@ -115,7 +115,7 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-exports.createService = async (req, res) => {
+const createService = async (req, res) => {
   try {
     let content = await Content.findOne();
     if (!content) content = new Content();
@@ -142,7 +142,7 @@ exports.createService = async (req, res) => {
   }
 };
 
-exports.updateService = async (req, res) => {
+const updateService = async (req, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -168,7 +168,7 @@ exports.updateService = async (req, res) => {
   }
 };
 
-exports.deleteService = async (req, res) => {
+const deleteService = async (req, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -203,4 +203,5 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  createService, updateService, deleteService
 };
