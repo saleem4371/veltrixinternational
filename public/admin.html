@@ -146,6 +146,7 @@ input[type="file"]{display:none;}
     <div class="sb-logo">
       <svg width="24" height="22" viewBox="0 0 120 108" fill="none"><defs><linearGradient id="rgb" x1="18" y1="10" x2="58" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#E8282E"/><stop offset="1" stop-color="#8B1020"/></linearGradient><linearGradient id="bgb" x1="92" y1="8" x2="60" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#62C6F2"/><stop offset="1" stop-color="#1756C0"/></linearGradient></defs><path d="M 14,12 C 12,6 28,4 38,10 C 44,14 48,18 50,22 L 60,98 C 54,80 38,52 14,12 Z" fill="url(#rgb)"/><path d="M 50,20 C 58,10 76,5 90,11 C 104,17 110,32 100,44 C 90,58 76,78 60,98 L 62,98 C 64,84 72,66 80,48 C 88,30 86,16 50,20 Z" fill="url(#bgb)"/></svg>
       <span class="sb-logo-mark">VELTRIX</span>
+     
     </div>
     <div class="sb-badge">CMS — Phase 2</div>
     <nav class="sb-nav">
@@ -580,24 +581,56 @@ async function addCItem(){
 }
 
 // ── BRANDING ──────────────────────────────────────
+// function renderBranding(){
+//   const mainLogo=DATA.branding?.mainLogo;
+//   const prev=document.getElementById('ml-prev');
+//   const rm=document.getElementById('ml-rm');
+//   if(prev&&mainLogo){prev.innerHTML=`<img src="${esc(mainLogo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`;}
+//   if(rm)rm.style.display=mainLogo?'inline-flex':'none';
+//   // Service icon list
+//   document.getElementById('svc-logos-list').innerHTML=(DATA.services||[]).map(s=>`
+//     <div class="ai-item">
+//       <div class="ai-head"><span class="ai-lbl">${esc(s.icon)} ${esc(s.title)}</span></div>
+//       <div class="logo-prev" id="slp-${s.id}">${s.logo?`<img src="${esc(s.logo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`:`<span style="font-size:1.4rem;">${s.icon}</span>`}</div>
+//       <div class="logo-acts" style="margin-top:10px;">
+//         <label class="btn-up" for="sli-${s.id}">↑ Upload Icon</label>
+//         <input type="file" id="sli-${s.id}" accept="image/*,.svg" onchange="uploadSvcLogo(${s.id},this)">
+//         <button class="btn-rm" id="slr-${s.id}" onclick="removeSvcLogo(${s.id})" style="display:${s.logo?'inline-flex':'none'}">✕ Remove</button>
+//       </div>
+//       <div class="logo-hint">64×64 or 128×128 recommended.</div>
+//     </div>`).join('');
+// }
 function renderBranding(){
-  const mainLogo=DATA.branding?.mainLogo;
-  const prev=document.getElementById('ml-prev');
-  const rm=document.getElementById('ml-rm');
-  if(prev&&mainLogo){prev.innerHTML=`<img src="${esc(mainLogo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`;}
-  if(rm)rm.style.display=mainLogo?'inline-flex':'none';
-  // Service icon list
-  document.getElementById('svc-logos-list').innerHTML=(DATA.services||[]).map(s=>`
-    <div class="ai-item">
-      <div class="ai-head"><span class="ai-lbl">${esc(s.icon)} ${esc(s.title)}</span></div>
-      <div class="logo-prev" id="slp-${s.id}">${s.logo?`<img src="${esc(s.logo)}" style="max-width:100%;max-height:100%;object-fit:contain;">`:`<span style="font-size:1.4rem;">${s.icon}</span>`}</div>
-      <div class="logo-acts" style="margin-top:10px;">
-        <label class="btn-up" for="sli-${s.id}">↑ Upload Icon</label>
-        <input type="file" id="sli-${s.id}" accept="image/*,.svg" onchange="uploadSvcLogo(${s.id},this)">
-        <button class="btn-rm" id="slr-${s.id}" onclick="removeSvcLogo(${s.id})" style="display:${s.logo?'inline-flex':'none'}">✕ Remove</button>
+  const mainLogo = DATA.branding?.mainLogo;
+  const prev = document.getElementById('ml-prev');
+  const rm = document.getElementById('ml-rm');
+
+  if(prev){
+    if(mainLogo){
+      prev.innerHTML = `<img src="${mainLogo}" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+    } else {
+      prev.innerHTML = `<span class="logo-init">V</span>`;
+    }
+  }
+
+  if(rm){
+    rm.style.display = mainLogo ? 'inline-flex' : 'none';
+  }
+
+  // service logos
+  document.getElementById('svc-logos-list').innerHTML =
+    (DATA.services || []).map(s => `
+      <div class="ai-item">
+        <div class="ai-head">
+          <span class="ai-lbl">${s.icon} ${s.title}</span>
+        </div>
+        <div class="logo-prev" id="slp-${s.id}">
+          ${s.logo
+            ? `<img src="${s.logo}" style="max-width:100%;max-height:100%;object-fit:contain;">`
+            : `<span style="font-size:1.4rem;">${s.icon}</span>`}
+        </div>
       </div>
-      <div class="logo-hint">64×64 or 128×128 recommended.</div>
-    </div>`).join('');
+    `).join('');
 }
 async function uploadMainLogo(inp){
   const file=inp.files[0];if(!file)return;
