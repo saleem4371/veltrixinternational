@@ -1,4 +1,3 @@
-
 'use strict';
 require('dotenv').config();
 
@@ -18,44 +17,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'veltrix-dev-secret-change-me';
 // ─────────────────────────────────────────────
 // PATHS
 // ─────────────────────────────────────────────
-// const DATA_PATH   = path.join(__dirname, 'data', 'content.json');
-// const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
-// const PUBLIC_DIR  = path.join(__dirname, 'public');
-
-// const DATA_PATH   = path.join('/tmp', 'content.json');
-// const SOURCE_DATA = path.join(__dirname, 'data', 'content.json');
-
- const DATA_DIR = path.join(__dirname, 'data');
-// const DATA_PATH = path.join(DATA_DIR, 'content.json');
-
-const DATA_PATH = '/tmp/content.json';
-
-if (!fs.existsSync(DATA_PATH)) {
-  fs.copyFileSync(
-    path.join(__dirname, 'data/content.json'),
-    DATA_PATH
-  );
-}
-
-
-const UPLOAD_DIR  = path.join('/tmp', 'uploads');
+const DATA_PATH   = path.join(__dirname, 'data', 'content.json');
+const UPLOAD_DIR  = path.join(__dirname, 'public', 'uploads');
 const PUBLIC_DIR  = path.join(__dirname, 'public');
 
-// [path.join(__dirname, 'data'), UPLOAD_DIR].forEach(d => {
-//   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-// });
-
-[UPLOAD_DIR].forEach(d => {
+[path.join(__dirname, 'data'), UPLOAD_DIR].forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
-
-// Copy initial content.json to writable /tmp
-// if (!fs.existsSync(DATA_PATH)) {
-//   fs.copyFileSync(SOURCE_DATA, DATA_PATH);
-// }
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
 
 // ─────────────────────────────────────────────
 // CONTENT HELPERS
@@ -68,19 +36,8 @@ function readContent() {
   }
 }
 
-// function writeContent(data) {
-//   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
-// }
 function writeContent(data) {
-  const tempPath = DATA_PATH + '.tmp';
-
-  fs.writeFileSync(
-    tempPath,
-    JSON.stringify(data, null, 2),
-    'utf8'
-  );
-
-  fs.renameSync(tempPath, DATA_PATH);
+  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf8');
 }
 
 // ─────────────────────────────────────────────
@@ -194,11 +151,7 @@ app.post('/api/auth/verify', requireAuth, (_req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /api/content — public, returns all content
-// app.get('/api/content', (_req, res) => {
-//   res.json(readContent());
-// });
 app.get('/api/content', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
   res.json(readContent());
 });
 
@@ -483,4 +436,4 @@ app.listen(PORT, () => {
     console.warn('\x1b[33m  ⚠  ADMIN_PASSWORD_HASH not set — using default dev password (Veltrix@2025)\x1b[0m');
     console.warn('\x1b[33m  ⚠  Set ADMIN_PASSWORD_HASH in .env before going live!\x1b[0m\n');
   }
-}); //here not updting json file shoeing updted if refresh dt old only 
+});

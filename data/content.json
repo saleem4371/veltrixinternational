@@ -1,47 +1,150 @@
 {
   "hero": {
-    "l1": "Veltrix International",
+    "l1": "Veltrix International SSS",
     "l2": "Building Brands.\\nEngineering the Future.",
     "desc": "We are builders — creating digital platforms, SaaS products, and intelligent tools that reshape industries across the UAE and India.",
     "badge": "UAE Licensed FZE · Dubai",
     "stats": [
-      { "v": "4+", "l": "Active Ventures" },
-      { "v": "2",  "l": "Countries" },
-      { "v": "UAE","l": "Headquarters" }
+      {
+        "v": "4+",
+        "l": "Active Ventures"
+      },
+      {
+        "v": "2",
+        "l": "Countries"
+      },
+      {
+        "v": "UAE",
+        "l": "Headquarters"
+      }
     ]
   },
   "services": [
-    { "id": 1, "icon": "🏗️", "title": "Brand Creation",    "desc": "We conceptualize, design, and launch brands from scratch — crafting market-ready identities with purpose and precision.", "logo": null },
-    { "id": 2, "icon": "🌐", "title": "Digital Platforms",  "desc": "End-to-end development of web platforms and marketplaces — from listing engines to full booking and payment integrations.", "logo": null },
-    { "id": 3, "icon": "⚙️", "title": "SaaS Solutions",     "desc": "Purpose-built SaaS applications designed for specific industries — from garage management to field sales intelligence.", "logo": null },
-    { "id": 4, "icon": "🤖", "title": "AI-Powered Tools",   "desc": "Leveraging AI to create smart prompt packages, automation tools, and knowledge-transfer systems for modern professionals.", "logo": null }
+    {
+      "id": 1,
+      "icon": "🏗️",
+      "title": "Brand Creation",
+      "desc": "We conceptualize, design, and launch brands from scratch — crafting market-ready identities with purpose and precision.",
+      "logo": null
+    },
+    {
+      "id": 2,
+      "icon": "🌐",
+      "title": "Digital Platforms",
+      "desc": "End-to-end development of web platforms and marketplaces — from listing engines to full booking and payment integrations.",
+      "logo": null
+    },
+    {
+      "id": 3,
+      "icon": "⚙️",
+      "title": "SaaS Solutions",
+      "desc": "Purpose-built SaaS applications designed for specific industries — from garage management to field sales intelligence.",
+      "logo": null
+    },
+    {
+      "id": 4,
+      "icon": "🤖",
+      "title": "AI-Powered Tools",
+      "desc": "Leveraging AI to create smart prompt packages, automation tools, and knowledge-transfer systems for modern professionals.",
+      "logo": null
+    }
   ],
   "about": {
     "story": "Veltrix International FZE is a UAE-licensed Free Zone Entity founded by two entrepreneurs with a shared vision: to create impactful digital brands and products that serve real markets.\\n\\nWith operations spanning the UAE and India — through our India entity Syfte Market Services — we build ventures from the ground up, from ideation and product design through to launch and scale.",
     "founders": [
-      { "name": "Melroy",       "role": "Co-Founder & Director" },
-      { "name": "Co-Founder",   "role": "Co-Founder & Director" }
+      {
+        "name": "Melroy",
+        "role": "Co-Founder & Director"
+      },
+      {
+        "name": "Co-Founder",
+        "role": "Co-Founder & Director"
+      }
     ],
     "stats": [
-      { "v": "4+",  "l": "Products Built"  },
-      { "v": "2",   "l": "Countries Active" },
-      { "v": "FZE", "l": "UAE Licensed"    },
-      { "v": "∞",   "l": "Ideas In Pipeline" }
+      {
+        "v": "4+",
+        "l": "Products Built"
+      },
+      {
+        "v": "2",
+        "l": "Countries Active"
+      },
+      {
+        "v": "FZE",
+        "l": "UAE Licensed"
+      },
+      {
+        "v": "∞",
+        "l": "Ideas In Pipeline"
+      }
     ]
   },
   "products": [
-    { "id": 1, "name": "VenueBook.in",    "cat": "Event & Venue Tech",       "desc": "India's dedicated event venue booking platform — listing, discovering, and reserving venues for weddings, corporate events, parties, and more. Also expanding to UAE for farmstays and unique venue experiences.", "url": "https://venuebook.in", "tags": "Event Tech, Booking Platform, India & UAE", "op": "Operated by Syfte Market Services (India)", "logo": null },
-    { "id": 2, "name": "ExMechanic",      "cat": "Automotive SaaS",          "desc": "A comprehensive garage customer flow and management application built specifically for automotive workshops — streamlining job cards, customer communication, billing, and operational intelligence.", "url": "#", "tags": "SaaS, Automotive, Garage Management", "op": "A Veltrix International Product", "logo": null },
-    { "id": 3, "name": "FieldPro",        "cat": "Sales Intelligence SaaS",  "desc": "A field sales intelligence tool that empowers on-ground sales teams with real-time tracking, territory management, knowledge gathering, and smart reporting dashboards.", "url": "#", "tags": "SaaS, Sales Tech, Field Intelligence", "op": "A Veltrix International Product", "logo": null },
-    { "id": 4, "name": "Veltrix Prompts", "cat": "AI Tools & Productivity",  "desc": "A curated library of professional-grade AI prompt packages for professionals, students, and learners — unlock the full potential of AI with structured, tested, domain-specific prompt systems.", "url": "#", "tags": "AI Tools, Productivity, Prompt Engineering", "op": "A Veltrix International Product", "logo": null }
+    {
+      "id": 1,
+      "name": "VenueBook.in",
+      "cat": "Event & Venue Tech",
+      "desc": "India's dedicated event venue booking platform — listing, discovering, and reserving venues for weddings, corporate events, parties, and more. Also expanding to UAE for farmstays and unique venue experiences.",
+      "url": "https://venuebook.in",
+      "tags": "Event Tech, Booking Platform, India & UAE",
+      "op": "Operated by Syfte Market Services (India)",
+      "logo": null
+    },
+    {
+      "id": 2,
+      "name": "ExMechanic",
+      "cat": "Automotive SaaS",
+      "desc": "A comprehensive garage customer flow and management application built specifically for automotive workshops — streamlining job cards, customer communication, billing, and operational intelligence.",
+      "url": "#",
+      "tags": "SaaS, Automotive, Garage Management",
+      "op": "A Veltrix International Product",
+      "logo": null
+    },
+    {
+      "id": 3,
+      "name": "FieldPro",
+      "cat": "Sales Intelligence SaaS",
+      "desc": "A field sales intelligence tool that empowers on-ground sales teams with real-time tracking, territory management, knowledge gathering, and smart reporting dashboards.",
+      "url": "#",
+      "tags": "SaaS, Sales Tech, Field Intelligence",
+      "op": "A Veltrix International Product",
+      "logo": null
+    },
+    {
+      "id": 4,
+      "name": "Veltrix Prompts",
+      "cat": "AI Tools & Productivity",
+      "desc": "A curated library of professional-grade AI prompt packages for professionals, students, and learners — unlock the full potential of AI with structured, tested, domain-specific prompt systems.",
+      "url": "#",
+      "tags": "AI Tools, Productivity, Prompt Engineering",
+      "op": "A Veltrix International Product",
+      "logo": "/uploads/006e2db44b60e925e7d03c1f.png"
+    }
   ],
   "contact": {
     "desc": "Interested in partnering, investing, or just want to learn more? We'd love to hear from you.",
     "items": [
-      { "icon": "📍", "label": "Location",        "value": "Dubai, United Arab Emirates" },
-      { "icon": "📧", "label": "Email",            "value": "hello@veltrix.ae"            },
-      { "icon": "🌐", "label": "India Operations", "value": "Syfte Market Services, India"},
-      { "icon": "🏢", "label": "Entity Type",      "value": "Free Zone Entity (FZE)"      }
+      {
+        "icon": "📍",
+        "label": "Location",
+        "value": "Dubai, United Arab Emirates"
+      },
+      {
+        "icon": "📧",
+        "label": "Email",
+        "value": "hello@veltrix.ae"
+      },
+      {
+        "icon": "🌐",
+        "label": "India Operations",
+        "value": "Syfte Market Services, India"
+      },
+      {
+        "icon": "🏢",
+        "label": "Entity Type",
+        "value": "Free Zone Entity (FZE)"
+      }
     ]
   },
   "branding": {
