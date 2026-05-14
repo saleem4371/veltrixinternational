@@ -1,63 +1,31 @@
-const Content = require('../models/Content');
+const Content = require("../models/Content");
 
 // GET content
-const getContent = async (_req, res) => {
-  try {
-    let data = await Content.findOne();
-
-    if (!data) {
-      data = await Content.create({
-        hero: {},
-        about: {},
-        contact: {},
-        branding: {},
-        services: [],
-        products: []
-      });
-    }
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const getContent = async (req, res) => {
+  const data = await Content.findOne();
+  res.json(data);
 };
 
-// HERO update
 const updateHero = async (req, res) => {
-  try {
-    const data = await Content.findOne();
-    data.hero = { ...data.hero, ...req.body };
-    await data.save();
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const data = await Content.findOne();
+  data.hero = { ...data.hero, ...req.body };
+  await data.save();
+  res.json({ ok: true });
 };
 
-// ABOUT update
 const updateAbout = async (req, res) => {
-  try {
-    const data = await Content.findOne();
-    data.about = { ...data.about, ...req.body };
-    await data.save();
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const data = await Content.findOne();
+  data.about = { ...data.about, ...req.body };
+  await data.save();
+  res.json({ ok: true });
 };
 
-// CONTACT update
 const updateContact = async (req, res) => {
-  try {
-    const data = await Content.findOne();
-    data.contact = { ...data.contact, ...req.body };
-    await data.save();
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const data = await Content.findOne();
+  data.contact = { ...data.contact, ...req.body };
+  await data.save();
+  res.json({ ok: true });
 };
-
 // GET PRODUCTS
 const getProducts = async (req, res) => {
   const content = await Content.findOne();
@@ -76,7 +44,7 @@ const createProduct = async (req, res) => {
     cat: "",
     desc: "",
     url: "",
-    tags: ""
+    tags: "",
   };
 
   content.products.push(newProduct);
@@ -90,9 +58,9 @@ const updateProduct = async (req, res) => {
   const id = Number(req.params.id);
 
   const content = await Content.findOne();
-  const product = content?.products?.find(p => p.id === id);
+  const product = content?.products?.find((p) => p.id === id);
 
-  if (!product) return res.status(404).json({ error: 'Not found' });
+  if (!product) return res.status(404).json({ error: "Not found" });
 
   Object.assign(product, req.body);
 
@@ -102,18 +70,18 @@ const updateProduct = async (req, res) => {
 };
 
 // DELETE PRODUCT
- const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     if (!id) {
-      return res.status(400).json({ error: 'Invalid product id' });
+      return res.status(400).json({ error: "Invalid product id" });
     }
 
     const content = await Content.findOne();
 
     if (!content) {
-      return res.status(404).json({ error: 'Content not found' });
+      return res.status(404).json({ error: "Content not found" });
     }
 
     if (!Array.isArray(content.products)) {
@@ -121,10 +89,10 @@ const updateProduct = async (req, res) => {
     }
 
     // find product first (optional for cleanup like image delete)
-    const product = content.products.find(p => p.id === id);
+    const product = content.products.find((p) => p.id === id);
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: "Product not found" });
     }
 
     // OPTIONAL: delete image from cloudinary if needed
@@ -133,21 +101,97 @@ const updateProduct = async (req, res) => {
     // }
 
     // remove product
-    content.products = content.products.filter(p => p.id !== id);
+    content.products = content.products.filter((p) => p.id !== id);
 
     await content.save();
 
     return res.json({
       ok: true,
-      message: 'Product deleted successfully'
+      message: "Product deleted successfully",
     });
-
   } catch (err) {
-    console.error('DELETE PRODUCT ERROR:', err);
+    console.error("DELETE PRODUCT ERROR:", err);
     return res.status(500).json({ error: err.message });
   }
 };
 
+exports.createService = async (req, res) => {
+  try {
+    let content = await Content.findOne();
+    if (!content) content = new Content();
+
+    const newService = {
+      id: Date.now(),
+      icon: req.body.icon || '',
+      title: req.body.title || '',
+      desc: req.body.desc || '',
+      logo: ''
+    };
+
+    content.services.push(newService);
+
+    await content.save();
+
+    res.json({
+      ok: true,
+      service: newService
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateService = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    const content = await Content.findOne();
+    if (!content) return res.status(404).json({ error: 'Content not found' });
+
+    const service = content.services.find(s => s.id === id);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+
+    service.icon = req.body.icon || service.icon;
+    service.title = req.body.title || service.title;
+    service.desc = req.body.desc || service.desc;
+
+    await content.save();
+
+    res.json({
+      ok: true,
+      service
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteService = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    let content = await Content.findOne();
+    if (!content) return res.status(404).json({ error: 'Content not found' });
+
+    const service = content.services.find(s => s.id === id);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+
+    // remove service
+    content.services = content.services.filter(s => s.id !== id);
+
+    await content.save();
+
+    res.json({
+      ok: true,
+      message: 'Service deleted'
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 module.exports = {
   getContent,
@@ -156,7 +200,7 @@ module.exports = {
   updateContact,
 
   getProducts,
-createProduct,
+  createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
 };
